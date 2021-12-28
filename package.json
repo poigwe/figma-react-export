@@ -1,0 +1,43 @@
+{
+  "name": "interplay-figma-export",
+  "version": "1.0.0",
+  "description": "tries to export static html fite from your figma project using its REST API",
+  "main": "figma-html-export.js",
+  "scripts": {
+    "test": "test",
+    "start": "node --experimental-modules figma-html-export.mjs"
+  },
+  "keywords": [
+    "figma",
+    "html",
+    "export"
+  ],
+  "author": "esdx",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.19.0",
+    "file-system-cache": "^1.0.5",
+    "jsdom": "^15.1.1",
+    "md5": "^2.2.1",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.5",
+    "@babel/preset-env": "^7.16.5",
+    "@babel/preset-react": "^7.16.5",
+    "babel-loader": "^8.2.3",
+    "react-hot-loader": "^4.13.0",
+    "webpack": "^5.65.0",
+    "webpack-cli": "^4.9.1",
+    "webpack-dev-server": "^4.7.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/esdx/figma-html-export.git"
+  },
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/esdx/figma-html-export/issues"
+  },
+  "homepage": "https://github.com/esdx/figma-html-export#readme"
+}
