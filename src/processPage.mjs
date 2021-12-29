@@ -8,7 +8,7 @@ import md5 from 'md5';
 //const md5 = require('md5');
 import { isObject, isString, isArray, isNull } from 'util';
 import { getImageMap, stack } from './request.mjs'
-import * as child from 'child_process';
+
 
 
 export function slugify(str) {
@@ -124,7 +124,6 @@ function parsePage(data) {
     pointer.parent = mainFrame;
     pointer.parentBB = data.absoluteBoundingBox;
 
-    console.log('pointer', pointer);
 
     //start processing children nodes. This is recursive for all childrens
     data.children.forEach(
@@ -146,13 +145,41 @@ function parsePage(data) {
         const textContent = fs.readFileSync(`${fileName}`, 'utf8');
 
         fs.writeFileSync(`${rootFolder}/src/${slugify(data.name)}.css`, extractStyle(textContent));
-        fs.writeFileSync(`${rootFolder}/src/${slugify(data.name)}.js`, reactBoilerPlate(`${slugify(data.name)}`, extractHtml(textContent)));
+        fs.writeFileSync(`${rootFolder}/src/${slugify(data.name)}.js`, reactBoilerPlate(`${slugify(data.name)}`, extractHtml(textContent )));
 
         // Delete the html file
         fs.unlinkSync(fileName);
 
         stack.getImagesLeft();
     });
+
+    createFile(`${rootFolder}/.babelrc`, `
+     {
+        "plugins": ["react-html-attrs"]
+      }
+    `);
+
+    fs.writeFileSync(`${rootFolder}/src/App.js`, `
+    import logo from './logo.svg';
+    import './App.css';
+    import { render } from "react-dom";
+    import { BrowserRouter, Routes, Route } from "react-router-dom";
+    import ${slugify(data.name).toUpperCase()}  from './${slugify(data.name)}'
+
+    function App() {
+    return (
+        <div className="App">
+        <BrowserRouter>
+            <Routes>
+            <Route path="/${slugify(data.name)}" element={<${slugify(data.name).toUpperCase()} />} />
+          </Routes>
+        </BrowserRouter>
+        </div>
+    );
+    }
+
+    export default App;`)
+    
 
     
 
@@ -248,7 +275,16 @@ function processExport(children, pointer, css, d) { //TODO make it wrapped with 
 function processFrame(children, pointer, css, d) {
     var className = checkUniqueName(children.name, children.type);
     let elementTag = convertTransitionToLink(children);
-    var element = d.createElement(elementTag.tag);
+    var element = '';
+    if(children.name === 'btn') {
+        element = d.createElement('button');
+    } 
+    else if(children.name === 'Input') {
+        element = d.createElement('input');
+    } else {
+        element = d.createElement(elementTag.tag);
+    }
+
     if (elementTag.node) {
         element.href = elementTag.node + '.html'
     }
@@ -280,6 +316,7 @@ function processFrame(children, pointer, css, d) {
 function processRectangle(children, pointer, css, d) {
     var className = checkUniqueName(children.name, children.type);
     let elementTag = convertTransitionToLink(children);
+    console.log('children.type', children.name);
     var element = d.createElement(elementTag.tag);
     if (elementTag.node) {
         console.log('elementTag.node', elementTag.node);
@@ -332,6 +369,7 @@ function processRectangle(children, pointer, css, d) {
 
 function processAsImage(children, pointer, css, d) {
     var className = checkUniqueName(children.name, children.type);
+
     var element = d.createElement('div');
     element.className += className;
     pointer.parent.appendChild(element);
@@ -645,7 +683,7 @@ function convertPosition(abb, pbb, constraints, sw = false, exc = false) { //sw 
     if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y + 'px;'
     if (v === 'TOP_BOTTOM') cssString += 'top: ' + y + 'px; bottom: ' + bottom + 'px; '
     if (v === 'BOTTOM') cssString += 'bottom:' + bottom + 'px;'
-    if (v === 'CENTER' && !(h === 'CENTER')) { cssString += 'top:' + centeredPecentV + '%; transform:translateY(-50%); '; }
+    if (v === 'CENTER' && !(h === 'CENTER')) { cssString += 'top:' +  centeredPecentV + '%; transform:translateY(-50%); '; }
 
     if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x + 'px;'; }
     if (h === 'LEFT_RIGHT') { cssString += 'left: ' + x + 'px; right: ' + right + 'px; '; }

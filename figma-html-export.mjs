@@ -18,22 +18,18 @@ global.downloadStackSize=config.downloadStackSize //for limiting request to figm
 var linkFile = 'https://api.figma.com/v1/files/'+figmaFileID
 
 
-child.exec('npx create-react-app html', (error, stdout, stderr) => {
+child.exec('npx create-react-app html && npm i react-router-dom react-router && npm install --save-dev babel-plugin-react-html-attrs', (error, stdout, stderr) => {
     if(error) {
         console.log('err', error)
     }
    
-    
     //creating folders if not exist
-if(!fs.existsSync(path.resolve('html/images'))) fs.mkdirSync(path.resolve('html/images'), { recursive: true });
-if(!fs.existsSync(path.resolve('html/dist'))) fs.mkdirSync(path.resolve('html/dist'), { recursive: true });
-if(!fs.existsSync(path.resolve('html/src'))) fs.mkdirSync(path.resolve('html/src'), { recursive: true });
-if(!fs.existsSync(path.resolve('cache'))) fs.mkdirSync(path.resolve('cache'));
+    if(!fs.existsSync(path.resolve('html/images'))) fs.mkdirSync(path.resolve('html/images'), { recursive: true });
+    if(!fs.existsSync(path.resolve('cache'))) fs.mkdirSync(path.resolve('cache'));
 
 
-let data=requestFile(linkFile, XFigmaToken, figmaFileID, false)  //link to file, token, get cached
-data.then((result) => {processPage(result, FigmaPageName);}) //start result processing
-
+    let data=requestFile(linkFile, XFigmaToken, figmaFileID, false)  //link to file, token, get cached
+    data.then((result) => {processPage(result, FigmaPageName);}) //start result processing
 
 
 })
