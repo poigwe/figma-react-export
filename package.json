@@ -1,50 +1,25 @@
 {
-  "name": "interplay-figma-export",
+  "name": "iteratefigma",
   "version": "1.0.0",
-  "description": "tries to export static html fite from your figma project using its REST API",
-  "main": "figma-html-export.js",
+  "description": "Tries to create a html and then react from figma",
+  "main": "index.js",
   "scripts": {
-    "test": "test",
-    "start": "node --experimental-modules figma-html-export.mjs"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node --experimental-modules figma-export.js"
   },
-  "keywords": [
-    "figma",
-    "html",
-    "export"
-  ],
-  "author": "esdx",
-  "license": "MIT",
+  "author": "Interplay",
+  "license": "ISC",
   "dependencies": {
-    "axios": "^0.19.0",
+    "axios": "^0.24.0",
     "file-system-cache": "^1.0.5",
-    "html-to-react": "^1.4.7",
-    "jsdom": "^15.1.1",
-    "md5": "^2.2.1",
-    "path": "^0.12.7",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
-    "react-html-parser": "^2.0.2",
+    "jsdom": "^19.0.0",
+    "md5": "^2.3.0",
     "react-router": "^6.2.1",
-    "react-router-dom": "^6.2.1"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.16.5",
-    "@babel/preset-env": "^7.16.5",
-    "@babel/preset-react": "^7.16.5",
-    "babel-loader": "^8.2.3",
-    "babel-plugin-react-html-attrs": "^3.0.5",
-    "react-hot-loader": "^4.13.0",
-    "webpack": "^5.65.0",
-    "webpack-cli": "^4.9.1",
-    "webpack-dev-server": "^4.7.1"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/esdx/figma-html-export.git"
+    "react-router-dom": "^6.2.1",
+    "w3c-xmlserializer": "^3.0.0"
   },
   "type": "module",
-  "bugs": {
-    "url": "https://github.com/esdx/figma-html-export/issues"
-  },
-  "homepage": "https://github.com/esdx/figma-html-export#readme"
+  "devDependencies": {
+    "babel-plugin-react-html-attrs": "^3.0.5"
+  }
 }
