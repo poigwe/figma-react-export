@@ -1,11 +1,11 @@
-/*const fs = require('fs')
-const path = require('path')
-const axios = require('axios')*/
+
 import fs from 'fs'
 import path from 'path'
 import axios from 'axios'
 
 import Cache from 'file-system-cache'
+
+
 console.log(Cache)
 const cache = Cache.default ({
     basePath: "./cache", // Path where cache files are stored
@@ -53,7 +53,7 @@ class Stack {
             this[format].push({id:elemId, name:imageName})
         } else { // get from cache
             //console.log('geting from cache: ' + imageName+'.'+format);
-            const savePath = path.resolve('./html', 'images', imageName +'.'+ format)
+            const savePath = path.resolve('./project/src', 'images', imageName +'.'+ format)
             const writer = fs.createWriteStream(savePath)
             writer.write(Buffer.from(cached.data));
         }
@@ -119,7 +119,7 @@ function downloadImages(images, stack, format, cache){
 }
 
 function downloadImage (url, name, ext, cache, id) { //id for diagnostic
-    const savePath = path.resolve('./html', 'images', name +'.'+ ext)
+    const savePath = path.resolve('./project/src', 'images', name +'.'+ ext)
     const writer = fs.createWriteStream(savePath)
     const instance = axios.create({
         responseType: 'arraybuffer',

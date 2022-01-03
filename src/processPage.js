@@ -1,78 +1,14 @@
-//const jsdom = require("jsdom");
 import jsdom from 'jsdom'
 const { JSDOM } = jsdom;
-//const fs = require('fs');
+import serialize from 'w3c-xmlserializer';
+
 import * as fs from 'fs';
 import path from 'path';
 import md5 from 'md5';
-//const md5 = require('md5');
+import * as child from 'child_process';
+import { slugify, extractStyle, extractHtml, createFile, createDir, reactBoilerPlate } from './utils.js';
 import { isObject, isString, isArray, isNull } from 'util';
-import { getImageMap, stack } from './request.mjs'
-
-
-
-export function slugify(str) {
-    //replace all special characters | symbols with a space
-    str = str.replace(/[`~!@#$%^&*()_\-+=\[\]{};:'"\\|\/,.<>?\s]/g, ' ')
-    .toLowerCase();
-    // trim spaces at start and end of string
-    str = str.replace(/^\s+|\s+$/gm,'');
-    // replace space with dash/hyphen
-    str = str.replace(/\s+/g, '_');  
-    // console.log('str', str)
-    return str
-}
-
-function extractStyle(htmlContent) {
-    const start = `<style type="text/css">`;
-    const end = `</style>`;
-    const middleText = htmlContent.split(start)[1].split(end)[0];
-    return middleText;
-}
-
-function extractHtml(htmlContent) {
-    const start = `<body class="fhe-body">`;
-    const end = `</body>`;
-    const middleText = htmlContent.split(start)[1].split(end)[0];
-    return middleText;
-}
-
-export const createFile = (filePath, fileContent) => {
-    fs.writeFile(filePath, fileContent, (error) => {
-        if(error) {
-            console.error('an error occured', error);
-        }
-        else {
-            console.log('file written')
-        }
-    })
-  }
-
-
-export const createDir = (dirPath) => {
-    fs.mkdirSync(dirPath, {recursive: true}, (error) => {
-        if(error) {
-            console.log('An error occured: ', error);
-        } else {
-            console.log('Your directory is made');
-        }
-    })
-}
-
-const reactBoilerPlate = (name, html) => {
-    return `import React from "react"
-    import './${slugify(name)}.css';
-
-
-    export default function ${slugify(name).charAt(0).toUpperCase() + name.slice(1)}() {
-        return (
-            <>
-            ${html}
-            </>
-        )
-    }
-    `
-};
+import { getImageMap, stack } from './request.js'
 
 export function processPage(r, pageName) {
     if (isString(r)) r = JSON.parse(r);
@@ -81,7 +17,7 @@ export function processPage(r, pageName) {
     for (var i = 0; i < result.length; i++) {
         if (result[i][1].name == pageName) { page = result[i][1]; break; } //warnig  
     }
-    //pass it to parser
+    // pass it to parser
     parse(page); //passed page with all frames
 }
 
@@ -93,7 +29,7 @@ function parse(page) {
             linkMap[topFrame.id] = topFrame.name //store map for linking links has transitionNodeID attribute set to the id of top level frame
         }
     );
-    topFrames.forEach(//start creating pages
+    topFrames.forEach( // start creating pages
         topFrame => {
             linkMap[topFrame.id] = topFrame.name //store map for linking links has transitionNodeID attribute set to the id of top level frame
             if (global.targetFrame && topFrame.name === global.targetFrame) parsePage(topFrame)
@@ -102,7 +38,9 @@ function parse(page) {
     );
 }
 
+
 function parsePage(data) {
+
     const dom = new JSDOM(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>` + data.name + `</title></head></html>`);
     const d = dom.window.document;
     //begin css entry
@@ -110,7 +48,7 @@ function parsePage(data) {
     let css = d.createElement('style');
     css.type = 'text/css';
     css.innerHTML += 'p {margin:0;padding:0;} .fhe-body{margin:0; background-color: ' + convertColor(data.backgroundColor) + '; height: ' + data.absoluteBoundingBox.height + 'px; } .fhe-mainFrame{background-color: ' + convertColor(data.backgroundColor) + '; height: ' + data.absoluteBoundingBox.height + 'px; width:100%; position:relative; overflow:hidden} ';
-
+   
 
     //set current element add class
     d.querySelector('body').className += 'fhe-body'
@@ -118,22 +56,29 @@ function parsePage(data) {
     mainFrame.className += 'fhe-mainFrame'
     d.querySelector('body').appendChild(mainFrame)
 
+
     //create pointer
     var pointer = {};
     pointer.current = mainFrame;
     pointer.parent = mainFrame;
     pointer.parentBB = data.absoluteBoundingBox;
 
-
-    //start processing children nodes. This is recursive for all childrens
+    //start processing children nodes. This is recursive for all children
     data.children.forEach(
         function (children) {
             processChildren(children, pointer, css, d, pointer);
         }
     );
+
     d.querySelector('head').appendChild(css);
-    var rootFolder = './html'
-    let fileName = `./html/${slugify(data.name)}.html`;
+    var rootFolder = './project'
+    let fileName = `./project/${slugify(data.name)}.html`;
+
+    child.exec('npm i react-router-dom react-router && npm install --save-dev babel-plugin-react-html-attrs', './project' , (error, stdout, stderr) => {
+        if(error) {
+            console.log('err', error)
+        }
+    })
 
 
     fs.writeFile(fileName, dom.serialize(), function (err) {
@@ -153,40 +98,7 @@ function parsePage(data) {
         stack.getImagesLeft();
     });
 
-    createFile(`${rootFolder}/.babelrc`, `
-     {
-        "plugins": ["react-html-attrs"]
-      }
-    `);
-
-    fs.writeFileSync(`${rootFolder}/src/App.js`, `
-    import logo from './logo.svg';
-    import './App.css';
-    import { render } from "react-dom";
-    import { BrowserRouter, Routes, Route } from "react-router-dom";
-    import ${slugify(data.name).toUpperCase()}  from './${slugify(data.name)}'
-
-    function App() {
-    return (
-        <div className="App">
-        <BrowserRouter>
-            <Routes>
-            <Route path="/${slugify(data.name)}" element={<${slugify(data.name).toUpperCase()} />} />
-          </Routes>
-        </BrowserRouter>
-        </div>
-    );
-    }
-
-    export default App;`)
-    
-
-    
-
-
 }
-
-
 
 function processChildren(children, pointer, css, d) {
     //store pointer
@@ -253,6 +165,7 @@ function processChildren(children, pointer, css, d) {
     }
 }
 
+
 function processExport(children, pointer, css, d) { //TODO make it wrapped with parent div. As wor now it works but in a very strange way
     var className = checkUniqueName(children.name, children.type);
     var element = d.createElement('img');
@@ -272,6 +185,22 @@ function processExport(children, pointer, css, d) { //TODO make it wrapped with 
     return pointer;
 }
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 function processFrame(children, pointer, css, d) {
     var className = checkUniqueName(children.name, children.type);
     let elementTag = convertTransitionToLink(children);
@@ -280,7 +209,7 @@ function processFrame(children, pointer, css, d) {
         element = d.createElement('button');
     } 
     else if(children.name === 'Input') {
-        element = d.createElement('input');
+        element = d.createElement('input', {className: className});
     } else {
         element = d.createElement(elementTag.tag);
     }
