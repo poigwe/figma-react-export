@@ -1,12 +1,11 @@
 import jsdom from 'jsdom'
 const { JSDOM } = jsdom;
-import serialize from 'w3c-xmlserializer';
 
 import * as fs from 'fs';
 import path from 'path';
 import md5 from 'md5';
 import * as child from 'child_process';
-import { slugify, extractStyle, extractHtml, createFile, createDir, reactBoilerPlate } from './utils.js';
+import { slugify, extractStyle, extractHtml, createFile, createDir, reactBoilerPlate, getImgs } from './utils.js';
 import { isObject, isString, isArray, isNull } from 'util';
 import { getImageMap, stack } from './request.js'
 
@@ -38,7 +37,7 @@ function parse(page) {
     );
 }
 
-
+let cssNames = '';
 function parsePage(data) {
 
     const dom = new JSDOM(`<!doctype html><html lang="en"><head><meta charset="utf-8"><title>` + data.name + `</title></head></html>`);
@@ -47,13 +46,13 @@ function parsePage(data) {
 
     let css = d.createElement('style');
     css.type = 'text/css';
-    css.innerHTML += 'p {margin:0;padding:0;} .fhe-body{margin:0; background-color: ' + convertColor(data.backgroundColor) + '; height: ' + data.absoluteBoundingBox.height + 'px; } .fhe-mainFrame{background-color: ' + convertColor(data.backgroundColor) + '; height: ' + data.absoluteBoundingBox.height + 'px; width:100%; position:relative; overflow:hidden} ';
+    css.innerHTML += 'p {margin:0;padding:0;} .width_100 {width: 100%} .the_body{margin:0; background-color: ' + convertColor(data.backgroundColor) + '; height: ' + data.absoluteBoundingBox.height + 'px; } .the_mainFrame{background-color: ' + convertColor(data.backgroundColor) + '; height: 100vh; width:100%; position:relative; overflow:auto} ';
    
 
     //set current element add class
-    d.querySelector('body').className += 'fhe-body'
+    d.querySelector('body').className += 'the_body'
     var mainFrame = d.createElement('div')
-    mainFrame.className += 'fhe-mainFrame'
+    mainFrame.className += 'the_mainFrame'
     d.querySelector('body').appendChild(mainFrame)
 
 
@@ -64,7 +63,7 @@ function parsePage(data) {
     pointer.parentBB = data.absoluteBoundingBox;
 
     //start processing children nodes. This is recursive for all children
-    data.children.forEach(
+    data.children?.forEach(
         function (children) {
             processChildren(children, pointer, css, d, pointer);
         }
@@ -74,12 +73,16 @@ function parsePage(data) {
     var rootFolder = './project'
     let fileName = `./project/${slugify(data.name)}.html`;
 
-    child.exec('npm i react-router-dom react-router && npm install --save-dev babel-plugin-react-html-attrs', './project' , (error, stdout, stderr) => {
+    child.exec('npm i bootstrap ', { cwd: './project'}, (error, stdout, stderr) => {
         if(error) {
             console.log('err', error)
         }
     })
 
+
+    if(!fs.existsSync(path.resolve(`project/pages/${slugify(data.name)}`))) fs.mkdirSync(path.resolve(`project/pages/${slugify(data.name)}`), { recursive: true });
+
+    cssNames += `import '../styles/${slugify(data.name)}.css' \n`
 
     fs.writeFile(fileName, dom.serialize(), function (err) {
         if (err) {
@@ -89,14 +92,36 @@ function parsePage(data) {
 
         const textContent = fs.readFileSync(`${fileName}`, 'utf8');
 
-        fs.writeFileSync(`${rootFolder}/src/${slugify(data.name)}.css`, extractStyle(textContent));
-        fs.writeFileSync(`${rootFolder}/src/${slugify(data.name)}.js`, reactBoilerPlate(`${slugify(data.name)}`, extractHtml(textContent )));
+        // let ImgScribbled = getImgs(textContent);
+        // let newText = '';
+        // for(let i = 0; i < ImgScribbled?.length; i++){ 
+        //     newText += `import picture${[i]} from '${ImgScribbled[i].replace('src="', '')}'; \n`
+        // }
+
+        fs.writeFileSync(`${rootFolder}/styles/${slugify(data.name)}.css`, extractStyle(textContent));
+        fs.writeFileSync(`${rootFolder}/pages/${slugify(data.name)}/index.js`, reactBoilerPlate(`${slugify(data.name)}`,  extractHtml(textContent )));
 
         // Delete the html file
-        fs.unlinkSync(fileName);
+        // fs.unlinkSync(fileName);
 
         stack.getImagesLeft();
     });
+
+
+
+    fs.writeFileSync(`project/pages/_app.js`, `
+    import '../styles/globals.css'; \n
+    import 'bootstrap/dist/css/bootstrap.min.css'; \n
+    ${cssNames}
+
+    function MyApp({ Component, pageProps }) {
+      return <Component {...pageProps} />
+    }
+    
+    export default MyApp
+    `)
+
+
 
 }
 
@@ -146,7 +171,7 @@ function processChildren(children, pointer, css, d) {
             break
         default:
             console.log(children.type + ' is undefined type of element')
-            console.log(children)
+            // console.log(children)
     }
 
     //recursive processing
@@ -196,38 +221,13 @@ function processExport(children, pointer, css, d) { //TODO make it wrapped with 
 
 
 
-
-
-
-
-
-function processFrame(children, pointer, css, d) {
-    var className = checkUniqueName(children.name, children.type);
-    let elementTag = convertTransitionToLink(children);
-    var element = '';
-    if(children.name === 'btn') {
-        element = d.createElement('button');
-    } 
-    else if(children.name === 'Input') {
-        element = d.createElement('input', {className: className});
-    } else {
-        element = d.createElement(elementTag.tag);
-    }
-
-    if (elementTag.node) {
-        element.href = elementTag.node + '.html'
-    }
-    element.className += className;
-
-    pointer.parent.appendChild(element);
-    //update pointer
-    pointer.current = element;
-
-    //process elemt class relaive css
-    var cssString = '.' + className + '{display:flex; position:absolute; ';//flexbox used for frames
-    cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+function RandomChunk(children, className, pointer, css) {
+    var cssString = '.' + className + '{  position:absolute; clear: both; ';//flexbox used for frames
+    cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints);
     cssString += 'background-color: ' + convertColor(children.backgroundColor) + '; '
     if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+
+
     if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
     children.effects.forEach(effect => {
         if (effect.type === 'DROP_SHADOW') {
@@ -238,6 +238,159 @@ function processFrame(children, pointer, css, d) {
     })
     cssString += '} '
     css.innerHTML += cssString;
+};
+
+function RandomChunkWithOutAbsolute(children, className, pointer, css) {
+        //process elemt class relaive css
+        var cssString = '.' + className + '{ clear: both; ';//flexbox used for frames
+        cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+        cssString += 'background-color: ' + convertColor(children.backgroundColor) + '; '
+        if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+
+
+        if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
+        children.effects.forEach(effect => {
+            if (effect.type === 'DROP_SHADOW') {
+                if (effect.visible) {
+                    cssString += 'box-shadow: ' + effect.offset.x + 'px ' + effect.offset.y + 'px ' + effect.radius + 'px ' + convertColor(effect.color) + '; '
+                }
+            }
+        })
+
+        cssString += ' top: 0 !important; } '
+        css.innerHTML += cssString;
+}
+
+function RandomChunkWithRelative (children, className, pointer, css) {
+    //process elemt class relaive css
+    var cssString = '.' + className + ' {  position: relative; clear: both; ';//flexbox used for frames
+    cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+    cssString += 'background-color: ' + convertColor(children.backgroundColor) + ' !important; '
+    if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+
+    if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
+    children.effects.forEach(effect => {
+        if (effect.type === 'DROP_SHADOW') {
+            if (effect.visible) {
+                cssString += 'box-shadow: ' + effect.offset.x + 'px ' + effect.offset.y + 'px ' + effect.radius + 'px ' + convertColor(effect.color) + '; '
+            }
+        }
+    })
+
+    cssString += ' top: 0 !important; } '
+    css.innerHTML += cssString;
+}
+
+
+
+
+function processFrame(children, pointer, css, d) {
+    var className = checkUniqueName(children.name, children.type);
+    let elementTag = convertTransitionToLink(children);
+    var element = '';
+
+    if(children.name === 'btn' || children.name === 'button' || children.name === 'buttons' || children.name === 'Button') {
+        element = d.createElement('button');
+        element.className = `${children.name}`
+
+                //process elemt class relaive css
+                var cssString = '.' + className + '{  position:absolute; clear: both;'; //flexbox used for frames
+                cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+                cssString += 'background-color: ' + convertColor(children.backgroundColor) + ' !important; '
+                if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+
+
+
+
+                if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
+                children.effects.forEach(effect => {
+                    if (effect.type === 'DROP_SHADOW') {
+                        if (effect.visible) {
+                            cssString += 'box-shadow: ' + effect.offset.x + 'px ' + effect.offset.y + 'px ' + effect.radius + 'px ' + convertColor(effect.color) + '; '
+                        }
+                    }
+                })
+                cssString += '} '
+                css.innerHTML += cssString;
+    } 
+
+    else if ( children.name.includes('btn') && children.name.includes('#')) {
+        element = d.createElement('button');
+        element.className = `${children.name}`
+        RandomChunkWithRelative(children, className, pointer, css)
+    }
+
+    else if (children.name.includes('Input') || children.name.includes('input')) {
+        element = d.createElement('input');
+        element.className = `${children.name} form-control`
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
+    
+    else if (children.name.includes('Card') || children.name.includes('card')) {
+        element = d.createElement('div');
+        element.className = `${children.name}`
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
+
+    else if (children.name.includes('container')) {
+        element = d.createElement('section');
+        element.className = `${children.name}`
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
+
+    else if ( children.name.includes('row')) {
+        element = d.createElement('div');
+        element.className = `${children.name}`
+        RandomChunkWithRelative(children, className, pointer, css)
+    } 
+
+    else if(children.name.includes('col')) {
+        element = d.createElement('div');
+        element.className = `${children.name}`
+        //process elemt class relaive css
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
+
+    else if(elementTag.noAbs === true) {
+        element = d.createElement('div');
+        element.className = `${children.name}`
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
+
+    else {
+   
+        element = d.createElement(elementTag.tag);
+     
+        //process elemt class relaive css
+        var cssString = '.' + className + '{display:flex; position:absolute; clear: both;';//flexbox used for frames
+        cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+        cssString += 'background-color: ' + convertColor(children.backgroundColor) + ' !important; '
+        if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+
+
+        
+        if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
+        children.effects.forEach(effect => {
+            if (effect.type === 'DROP_SHADOW') {
+                if (effect.visible) {
+                    cssString += 'box-shadow: ' + effect.offset.x + 'px ' + effect.offset.y + 'px ' + effect.radius + 'px ' + convertColor(effect.color) + '; '
+                }
+            }
+        })
+        cssString += '} '
+        css.innerHTML += cssString;
+    }
+
+    if (elementTag.node) {
+        element.href = elementTag.node + '.html'
+    }
+    element.className += ' ' + className;
+
+    pointer.parent.appendChild(element);
+    //update pointer
+    pointer.current = element;
+
+
 
     return pointer;
 }
@@ -245,7 +398,7 @@ function processFrame(children, pointer, css, d) {
 function processRectangle(children, pointer, css, d) {
     var className = checkUniqueName(children.name, children.type);
     let elementTag = convertTransitionToLink(children);
-    console.log('children.type', children.name);
+    
     var element = d.createElement(elementTag.tag);
     if (elementTag.node) {
         console.log('elementTag.node', elementTag.node);
@@ -267,7 +420,7 @@ function processRectangle(children, pointer, css, d) {
         if (fills.type === 'IMAGE') {
             //console.log('processing image: '+ fills.imageRef)
             getImageMap(children.id, fills.imageRef);
-            cssString += 'background-image: url("images/' + fills.imageRef + '.png"); background-repeat: no-repeat; background-size: cover; ';
+            cssString += 'background-image: url("../public/images/' + fills.imageRef + '.png"); background-repeat: no-repeat; background-size: cover; ';
         }
         if (fills.type === 'GRADIENT_LINEAR') {
             cssString += 'background: ' + convertLinearGradient(fills, children.absoluteBoundingBox, children)
@@ -306,7 +459,7 @@ function processAsImage(children, pointer, css, d) {
     var cssString = '.' + className + '{display:flex; position:absolute; ' //flexbox used for frames
     cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints)
     getImageMap(children.id, md5(children.id))
-    cssString += 'background-image: url("images/' + md5(children.id) + '.png"); background-repeat: no-repeat; background-size: 100%; ';
+    cssString += 'background-image: url("../public/images/' + md5(children.id) + '.png"); background-repeat: no-repeat; background-size: 100%; ';
 
     cssString += '} .' + className + ' * {display:none !important;} ';
     css.innerHTML += cssString;
@@ -399,7 +552,8 @@ function processVector(children, pointer, css, d) {
     let element = d.createElement('img');
     element.className += className;
 
-    let cssString = '.' + className + '{position:absolute; ' //flexbox used for frames
+    
+    let cssString = '.' + className + children.name.includes('#') ? '{ ' : '{position:absolute; ' //flexbox used for frames
 
     cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.strokeWeight)
 
@@ -424,12 +578,30 @@ function processStroke(children) {
 
 function processText(children, pointer, css, d) {
     let className = checkUniqueName(children.id)
-    let element = d.createElement('div')
-    element.className += className
-    element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);
+    let cssString = "";
+    let element = "";
+
+    if (children.name.includes('col')) {
+        element = d.createElement('div');
+        element.className = `${children.name} ` + className
+        //process elemt class relaive css
+        element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
+        cssString = '.' + className + '{ display:flex; flex-flow: row; ' //flexbox used for frames
+    } else if(children.name.includes('#')) {
+        element = d.createElement('div');
+        element.className = `${children.name} ` + className
+        //process elemt class relaive css
+        element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
+        cssString = '.' + className + '{  ' //flexbox used for frames
+    }
+    else {
+        element = d.createElement('div')
+        element.className += className
+        element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);    
+        cssString = '.' + className + '{position:absolute; display:flex; flex-flow: row; ' //flexbox used for frames
+    }
 
 
-    let cssString = '.' + className + '{position:absolute; display:flex; flex-flow: row; ' //flexbox used for frames
     cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints)
 
     //console.log('processing text block: '+ /*children.name +*/ ' whith id: ' + children.id)
@@ -446,25 +618,32 @@ function processText(children, pointer, css, d) {
 
     pointer.parent.appendChild(element);
     cssString += '}';
-    if (!(children.style.paragraphSpacing === 'undefined')) cssString += '.' + className + ' p {margin-bottom: ' + children.style.paragraphSpacing + 'px;}';
+    if (!(children.style.paragraphSpacing === 'undefined')) cssString += '.' + className + ' p {margin-bottom: ' + children.style.paragraphSpacing / 16 + 'rem;}';
     css.innerHTML += cssString;
     pointer.current = element;
     return pointer;
 }
 
 function convertTransitionToLink(children) {
-    let tag = 'div'
-    let node = false
-    if (typeof children.transitionNodeID !== 'undefined') {
+    let tag = 'div';
+    let node = false;
+    let noAbs = false;
+
+    if (typeof children.transitionNodeID !== 'undefined' && children.name.includes('#')) {
+        tag = 'div';
+        node = linkMap[children.transitionNodeID];
+        noAbs = true;
+    } else {
         tag = 'a'
         node = linkMap[children.transitionNodeID]
+        noAbs = false;
     }
-    return { tag: tag, node: node }
+    return { tag: tag, node: node, noAbs: noAbs }
 }
 function convertCharacters(string, overrideMap, overrideTable, css, baseClass = '') {
     let spanCreated = 0;
     let cssString = ''
-    let result = '<div style="width:100%"><p>'
+    let result = '<div class="width_100"><p>'
     let i = 0;
 
     string.split('').forEach(char => {
@@ -548,23 +727,7 @@ function convertStyle(style) { //convert styles for text
 }
 
 function checkUniqueName(name, type = '') {
-    //make class name unique
-    //uniqualize names and replace spaces with _
-    //if (name.replace(/ .*/,'').toLowerCase() == type.toLowerCase()) { // then name is probably not unique
-    //    return randomName(5);
-    //} else {
-    //    return name;
-    //}
-    /*name= 'c_'+name;
-    name = name.replace(/[0-9]/, 'd'); //replase first digit with "d" letter
-    name = name.replace(/\s+/g, '_');
-    name = name.replace(/\\/, '-');
-    name = name.replace(/\+/, '-');
-    name = name.replace(/;/, '-');
-    name = name.replace(/\./g, '_');
-    name = name.replace(/\:/g, '-');
-    return name + randomName(6);*/
-    return 'c' + randomName(6);
+    return 'Inter_' + randomName(6);
 }
 
 function randomName(length) {
@@ -579,6 +742,73 @@ function randomName(length) {
 
 function randomRGB(from = 0, to = 255) { // was used for testing purposes
     return 'rgba(' + Math.floor(Math.random() * to + from) + ', ' + Math.floor(Math.random() * to + from) + ', ' + Math.floor(Math.random() * to + from) + ', ' + Math.round(Math.random() * 100) / 100 + ')';
+}
+
+
+function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
+    //generate css position relative to parent block
+    //api returning only global position
+    var y = abb.y - pbb.y; //top
+    var x = abb.x - pbb.x; //left
+    var bottom = pbb.height - (y + abb.height);
+    var right = pbb.width - (x + abb.width);
+    var v = constraints?.vertical;
+    var h = constraints?.horizontal;
+    var centeredPecentV = Math.round(((y + abb.height / 2) / (pbb.height / 100)) * 100) / 100;
+    var centeredPecentH = Math.round(((x + abb.width / 2) / (pbb.width / 100)) * 100) / 100;
+    var cssString = '';
+    let unit = 'px'
+
+    if (abb.width < 1 && sw) {//vertical line correction
+        abb.width = sw;
+        if (Math.round(right) != 0) right -= sw / 2
+        if (Math.round(x) != 0) x -= sw / 2
+    }
+    if (abb.height < 1 && sw) {//horizontal line correction
+        abb.height = sw;
+        if (Math.round(bottom) != 0) bottom -= sw / 2
+        if (Math.round(y) != 0) y -= sw / 2
+    }
+
+
+    let width = "";
+    if(name === 'row') {
+        width = ''
+    } else {
+        width = 'width: ' + abb.width + unit + '; '
+    }
+
+    let height = "";
+    if(name === 'row') {
+        height = ''
+    } else {
+        height = 'height: ' + abb.height + unit + '; '
+    }
+
+    if (Math.round(abb.width)==Math.round(pbb.width)) width = 'width: 100%;' //experimental
+    // if (abb.width < 1000) width = 'width: 100%; max-width: 100%;' 
+
+    if (!exc) cssString += width + height
+
+    if(name === 'row') {
+        if (v === 'TOP' || v === 'SCALE') cssString += '';
+    } else {
+        if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y / 16 + 'rem;'
+    }
+
+
+    if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y / 16 + 'rem;'
+    if (v === 'TOP_BOTTOM') cssString += 'top: ' + y / 16 + 'rem; bottom: ' + bottom / 16 + 'rem; '
+    if (v === 'BOTTOM') cssString += 'bottom:' + bottom / 16 + 'rem;'
+    if (v === 'CENTER' && !(h === 'CENTER')) { cssString += 'top:' +  centeredPecentV + '%; transform:translateY(-50%); '; }
+
+    if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x / 16 + 'rem;'; }
+    if (h === 'LEFT_RIGHT') { cssString += 'left: ' + x / 16 + 'rem; right: ' + right / 16 + 'rem; '; }
+    if (h === 'RIGHT') { cssString += 'right:' + right / 16 + 'rem;'; }
+    if (h === 'CENTER' && !(v === 'CENTER')) { cssString += 'left:' + centeredPecentH + '%; transform:translatex(-50%); '; }
+    if (h === 'CENTER' && v === 'CENTER') { cssString += 'left:' + centeredPecentH + '%; top:' + centeredPecentV + '%; transform:translateX(-50%) translateY(-50%); '; }
+
+    return cssString;
 }
 
 function convertPosition(abb, pbb, constraints, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
@@ -607,16 +837,19 @@ function convertPosition(abb, pbb, constraints, sw = false, exc = false) { //sw 
     }
     let width = 'width: ' + abb.width + unit + '; '
     let height = 'height: ' + abb.height + unit + '; '
-    //if (Math.round(abb.width)==Math.round(pbb.width)) width = '100%' //experimental
+
+    if (Math.round(abb.width)==Math.round(pbb.width)) width = 'width: 100%;' //experimental
+    // if (abb.width < 1000) width = 'width: 100%; max-width: 100%;' 
+
     if (!exc) cssString += width + height
-    if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y + 'px;'
-    if (v === 'TOP_BOTTOM') cssString += 'top: ' + y + 'px; bottom: ' + bottom + 'px; '
-    if (v === 'BOTTOM') cssString += 'bottom:' + bottom + 'px;'
+    if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y / 16 + 'rem;'
+    if (v === 'TOP_BOTTOM') cssString += 'top: ' + y / 16 + 'rem; bottom: ' + bottom / 16 + 'rem; '
+    if (v === 'BOTTOM') cssString += 'bottom:' + bottom / 16 + 'rem;'
     if (v === 'CENTER' && !(h === 'CENTER')) { cssString += 'top:' +  centeredPecentV + '%; transform:translateY(-50%); '; }
 
-    if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x + 'px;'; }
-    if (h === 'LEFT_RIGHT') { cssString += 'left: ' + x + 'px; right: ' + right + 'px; '; }
-    if (h === 'RIGHT') { cssString += 'right:' + right + 'px;'; }
+    if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x / 16 + 'rem;'; }
+    if (h === 'LEFT_RIGHT') { cssString += 'left: ' + x / 16 + 'rem; right: ' + right / 16 + 'rem; '; }
+    if (h === 'RIGHT') { cssString += 'right:' + right / 16 + 'rem;'; }
     if (h === 'CENTER' && !(v === 'CENTER')) { cssString += 'left:' + centeredPecentH + '%; transform:translatex(-50%); '; }
     if (h === 'CENTER' && v === 'CENTER') { cssString += 'left:' + centeredPecentH + '%; top:' + centeredPecentV + '%; transform:translateX(-50%) translateY(-50%); '; }
 
@@ -624,5 +857,5 @@ function convertPosition(abb, pbb, constraints, sw = false, exc = false) { //sw 
 }
 
 function convertColor(color) {
-    if (typeof color.r !== 'undefined') { return 'rgba(' + Math.floor(255 * color.r) + ', ' + Math.floor(255 * color.g) + ', ' + Math.floor(255 * color.b) + ', ' + color.a + ')'; }
+    if (typeof color?.r !== 'undefined') { return 'rgba(' + Math.floor(255 * color?.r) + ', ' + Math.floor(255 * color?.g) + ', ' + Math.floor(255 * color?.b) + ', ' + color.a + ')'; }
 }

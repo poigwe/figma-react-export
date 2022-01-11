@@ -19,7 +19,14 @@ function replaceAttributes(htmlContent) {
     htmlContent = htmlContent.replace(/(<img[^>]*?) *\/?>/g, "$1 />")
     htmlContent = htmlContent.replace(/(<input[^>]*?) *\/?>/g, "$1 />")
     htmlContent = htmlContent.replace(/(<br[^>]*?) *\/?>/g, "$1 />")
-    htmlContent = htmlContent.replace(/style="(.+?)"/g, "style={{ $1: '$2' }}");
+    // htmlContent = htmlContent.replace(/style="(.+?)"/g, "style={{ $1: '$2' }}");
+    return htmlContent
+}
+
+
+function cleanUpCss(htmlContent) {
+    htmlContent = htmlContent.replace(/top:Infinity%;/g, '')
+    htmlContent = htmlContent.replace(/undefined/g, '')
     return htmlContent
 }
 
@@ -29,15 +36,23 @@ export function extractStyle(htmlContent) {
     const start = `<style type="text/css">`;
     const end = `</style>`;
     const middleText = htmlContent.split(start)[1].split(end)[0];
-    return middleText;
+    const newContent = cleanUpCss(middleText);
+    return newContent;
 }
 
 export function extractHtml(htmlContent) {
-    const start = `<body class="fhe-body">`;
+    const start = `<body class="the_body">`;
     const end = `</body>`;
     const middleText = htmlContent.split(start)[1].split(end)[0];
     const newContent = replaceAttributes(middleText);
     return newContent;
+}
+
+export function getImgs(htmlContent) {
+    // htmlContent = htmlContent.match(/src="[^"]*"/gm);
+
+    htmlContent = htmlContent.match(/(?:src)=\"([^\"]+)/gm);
+    return htmlContent
 }
 
 export const createFile = (filePath, fileContent) => {
@@ -64,8 +79,6 @@ export const createDir = (dirPath) => {
 
 export const reactBoilerPlate = (name, html) => {
     return `import React from "react"
-    import './${slugify(name)}.css';
-
 
     export default function ${slugify(name).charAt(0).toUpperCase() + name.slice(1)}() {
         return (
