@@ -1,6 +1,12 @@
 # figma-html-export
 This is a basic script to convert figma to react files
 
+# disclaimer
+This  program is still in development, it's been built as a POC
+
+# figma to Next Js (Bootstrap Support)
+In order to be able generate bootstrap support code files from figma file, you have to add in the  right  bootstrap class names as you would in
+a normal html file. Also adding # infront of the texts and button removes the absolute positioning.
 
 ### Some notes
 •All blocks positioned absolutely  
@@ -13,6 +19,8 @@ This is a basic script to convert figma to react files
 •Top level frames exported as separate html files. Transitions between them converted to links. If you need just one frame use "targetFrame" in your config.json  
 •Nodes with mirroring (Shift-E Shift-V) may not be correctly parsed  
 •At the current stage this script is not very suitable for large documents. It will create too many images in a very irrational way
+
+
 
 ### Installation
 1. git clone on download this script.  

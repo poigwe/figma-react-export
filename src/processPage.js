@@ -243,7 +243,7 @@ function RandomChunk(children, className, pointer, css) {
 function RandomChunkWithOutAbsolute(children, className, pointer, css) {
         //process elemt class relaive css
         var cssString = '.' + className + '{ clear: both; ';//flexbox used for frames
-        cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+        cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints);
         cssString += 'background-color: ' + convertColor(children.backgroundColor) + '; '
         if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
 
@@ -277,7 +277,9 @@ function RandomChunkWithRelative (children, className, pointer, css) {
         }
     })
 
+
     cssString += ' top: 0 !important; } '
+    if(children.name.includes('row')) cssString += ' @media only screen and (max-width: 800px) {' + '.' + className + '{flex-direction: column !important;}}'
     css.innerHTML += cssString;
 }
 
@@ -320,13 +322,13 @@ function processFrame(children, pointer, css, d) {
         RandomChunkWithRelative(children, className, pointer, css)
     }
 
-    else if (children.name.includes('Input') || children.name.includes('input')) {
+    else if (children.name.includes('form-control') || children.name.includes('input')) {
         element = d.createElement('input');
         element.className = `${children.name} form-control`
         RandomChunkWithOutAbsolute(children, className, pointer, css)
     } 
     
-    else if (children.name.includes('Card') || children.name.includes('card')) {
+    else if (children.name.includes('card')) {
         element = d.createElement('div');
         element.className = `${children.name}`
         RandomChunkWithOutAbsolute(children, className, pointer, css)
@@ -744,6 +746,9 @@ function randomRGB(from = 0, to = 255) { // was used for testing purposes
     return 'rgba(' + Math.floor(Math.random() * to + from) + ', ' + Math.floor(Math.random() * to + from) + ', ' + Math.floor(Math.random() * to + from) + ', ' + Math.round(Math.random() * 100) / 100 + ')';
 }
 
+function checkIfRow() {
+
+}
 
 function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
     //generate css position relative to parent block
@@ -772,14 +777,16 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
 
 
     let width = "";
-    if(name === 'row') {
+    if(name.includes('row')) {
+        width = ''
+    } else if (name.includes('col')) {
         width = ''
     } else {
         width = 'width: ' + abb.width + unit + '; '
     }
 
     let height = "";
-    if(name === 'row') {
+    if(name.includes('row')) {
         height = ''
     } else {
         height = 'height: ' + abb.height + unit + '; '
@@ -790,7 +797,7 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
 
     if (!exc) cssString += width + height
 
-    if(name === 'row') {
+    if(name.includes('row')) {
         if (v === 'TOP' || v === 'SCALE') cssString += '';
     } else {
         if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y / 16 + 'rem;'
@@ -802,7 +809,8 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
     if (v === 'BOTTOM') cssString += 'bottom:' + bottom / 16 + 'rem;'
     if (v === 'CENTER' && !(h === 'CENTER')) { cssString += 'top:' +  centeredPecentV + '%; transform:translateY(-50%); '; }
 
-    if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x / 16 + 'rem;'; }
+    // if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x / 16 + 'rem;'; }
+    if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + 0 + 'rem;'; }
     if (h === 'LEFT_RIGHT') { cssString += 'left: ' + x / 16 + 'rem; right: ' + right / 16 + 'rem; '; }
     if (h === 'RIGHT') { cssString += 'right:' + right / 16 + 'rem;'; }
     if (h === 'CENTER' && !(v === 'CENTER')) { cssString += 'left:' + centeredPecentH + '%; transform:translatex(-50%); '; }
