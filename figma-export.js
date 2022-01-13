@@ -19,13 +19,13 @@ global.downloadStackSize=config.downloadStackSize //for limiting request to figm
 let linkFile = 'https://api.figma.com/v1/files/' +figmaFileID
 
 
-child.exec('npx create-react-app project', (error, stdout, stderr) => {
+child.exec('npx create-next-app project', (error, stdout, stderr) => {
     if(error) {
         console.log('err', error)
     }
    
     //creating folders if not exist
-    if(!fs.existsSync(path.resolve('project/src/images'))) fs.mkdirSync(path.resolve('project/src/images'), { recursive: true });
+    if(!fs.existsSync(path.resolve('project/public/images'))) fs.mkdirSync(path.resolve('project/public/images'), { recursive: true });
     if(!fs.existsSync(path.resolve('cache'))) fs.mkdirSync(path.resolve('cache'));
 
 
