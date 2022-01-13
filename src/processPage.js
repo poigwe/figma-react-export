@@ -316,16 +316,17 @@ function processFrame(children, pointer, css, d) {
                 css.innerHTML += cssString;
     } 
 
-    else if ( children.name.includes('btn') && children.name.includes('#')) {
+    else if (children.name.includes('btn') && children.name.includes('#')) {
         element = d.createElement('button');
         element.className = `${children.name}`
-        RandomChunkWithRelative(children, className, pointer, css)
+        children.name.includes('#') ? RandomChunkWithRelative(children, className, pointer, css) : RandomChunk(children, className, pointer, css);
     }
 
     else if (children.name.includes('bs') || children.name.includes('input')) {
         element = d.createElement('input');
         element.className = `${children.name} form-control`
-        children.name.includes('bs') ? RandomChunkWithOutAbsolute(children, className, pointer, css) : RandomChunk(children, className, pointer, css);
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+        // children.name.includes('bs') ? RandomChunkWithOutAbsolute(children, className, pointer, css) : RandomChunk(children, className, pointer, css);
     } 
     
     else if (children.name.includes('card') || children.name.includes('jumbotron')) {
