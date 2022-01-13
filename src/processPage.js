@@ -322,14 +322,20 @@ function processFrame(children, pointer, css, d) {
         RandomChunkWithRelative(children, className, pointer, css)
     }
 
-    else if (children.name.includes('form-control') || children.name.includes('input')) {
+    else if (children.name.includes('bs') || children.name.includes('input')) {
         element = d.createElement('input');
         element.className = `${children.name} form-control`
-        RandomChunkWithOutAbsolute(children, className, pointer, css)
+        children.name.includes('bs') ? RandomChunkWithOutAbsolute(children, className, pointer, css) : RandomChunk(children, className, pointer, css);
     } 
     
-    else if (children.name.includes('card')) {
+    else if (children.name.includes('card') || children.name.includes('jumbotron')) {
         element = d.createElement('div');
+        element.className = `${children.name}`
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
+
+    else if (children.name.includes('badge')) {
+        element = d.createElement('span');
         element.className = `${children.name}`
         RandomChunkWithOutAbsolute(children, className, pointer, css)
     } 
@@ -553,9 +559,14 @@ function processVector(children, pointer, css, d) {
     let className = checkUniqueName(children.name, children.type);
     let element = d.createElement('img');
     element.className += className;
+    let cssString = "";
 
-    
-    let cssString = '.' + className + children.name.includes('#') ? '{ ' : '{position:absolute; ' //flexbox used for frames
+    if(children.name.includes('#')) {
+        cssString = '.' + className + children.name.includes('#') ? '{ ' : '{ ' //flexbox used for frames
+    } else {
+        cssString = '.' + className + children.name.includes('#') ? '{ ' : '{position:absolute; ' //flexbox used for frames
+    }
+
 
     cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.strokeWeight)
 
@@ -589,7 +600,7 @@ function processText(children, pointer, css, d) {
         //process elemt class relaive css
         element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
         cssString = '.' + className + '{ display:flex; flex-flow: row; ' //flexbox used for frames
-    } else if(children.name.includes('#')) {
+    } else if (children.name.includes('#')) {
         element = d.createElement('div');
         element.className = `${children.name} ` + className
         //process elemt class relaive css
@@ -604,7 +615,7 @@ function processText(children, pointer, css, d) {
     }
 
 
-    cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints)
+    cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints)
 
     //console.log('processing text block: '+ /*children.name +*/ ' whith id: ' + children.id)
 
@@ -777,7 +788,7 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
 
 
     let width = "";
-    if(name.includes('row')) {
+    if(name.includes('row') || name.includes('container') || name.includes('#')) {
         width = ''
     } else if (name.includes('col')) {
         width = ''
@@ -789,7 +800,7 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
     if(name.includes('row')) {
         height = ''
     } else {
-        height = 'height: ' + abb.height + unit + '; '
+        height = 'min-height: ' + abb.height + unit + '; '
     }
 
     if (Math.round(abb.width)==Math.round(pbb.width)) width = 'width: 100%;' //experimental
