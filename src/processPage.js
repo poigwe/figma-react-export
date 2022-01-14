@@ -92,17 +92,12 @@ function parsePage(data) {
 
         const textContent = fs.readFileSync(`${fileName}`, 'utf8');
 
-        // let ImgScribbled = getImgs(textContent);
-        // let newText = '';
-        // for(let i = 0; i < ImgScribbled?.length; i++){ 
-        //     newText += `import picture${[i]} from '${ImgScribbled[i].replace('src="', '')}'; \n`
-        // }
 
         fs.writeFileSync(`${rootFolder}/styles/${slugify(data.name)}.css`, extractStyle(textContent));
         fs.writeFileSync(`${rootFolder}/pages/${slugify(data.name)}/index.js`, reactBoilerPlate(`${slugify(data.name)}`,  extractHtml(textContent )));
 
         // Delete the html file
-        // fs.unlinkSync(fileName);
+        fs.unlinkSync(fileName);
 
         stack.getImagesLeft();
     });
@@ -360,6 +355,13 @@ function processFrame(children, pointer, css, d) {
         RandomChunkWithOutAbsolute(children, className, pointer, css)
     } 
 
+    else if(children.name.includes('navbar')) {
+        element = d.createElement('nav');
+        element.className = `${children.name} navbar navbar-expand-lg navbar-light bg-light`
+        //process elemt class relaive css
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
+
     else if(elementTag.noAbs === true) {
         element = d.createElement('div');
         element.className = `${children.name}`
@@ -413,6 +415,11 @@ function processRectangle(children, pointer, css, d) {
         console.log('elementTag.node', elementTag.node);
         element.href = elementTag.node + '.html'
     }
+    else if(elementTag.noAbs === true) {
+        element = d.createElement('div');
+        element.className = `${children.name}`
+        RandomChunkWithOutAbsolute(children, className, pointer, css)
+    } 
     element.className += className;
     pointer.parent.appendChild(element);
 
@@ -789,10 +796,10 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
 
 
     let width = "";
-    if(name.includes('row') || name.includes('container') || name.includes('#')) {
+    if(name.includes('row') || name.includes('container') || name.includes('col')) {
         width = ''
-    } else if (name.includes('col')) {
-        width = ''
+    } else if (name.includes('#') && name.includes('#')) {
+        width = 'width: ' + abb.width + unit + '; '
     } else {
         width = 'width: ' + abb.width + unit + '; '
     }
@@ -821,8 +828,8 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
     if (v === 'BOTTOM') cssString += 'bottom:' + bottom / 16 + 'rem;'
     if (v === 'CENTER' && !(h === 'CENTER')) { cssString += 'top:' +  centeredPecentV + '%; transform:translateY(-50%); '; }
 
-    // if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x / 16 + 'rem;'; }
-    if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + 0 + 'rem;'; }
+    if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + x / 16 + 'rem;'; }
+    // if (h === 'LEFT' || h === 'SCALE') { cssString += 'left: ' + 0 + 'rem;'; }
     if (h === 'LEFT_RIGHT') { cssString += 'left: ' + x / 16 + 'rem; right: ' + right / 16 + 'rem; '; }
     if (h === 'RIGHT') { cssString += 'right:' + right / 16 + 'rem;'; }
     if (h === 'CENTER' && !(v === 'CENTER')) { cssString += 'left:' + centeredPecentH + '%; transform:translatex(-50%); '; }
