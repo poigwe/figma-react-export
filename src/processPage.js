@@ -311,11 +311,18 @@ function processFrame(children, pointer, css, d) {
                 css.innerHTML += cssString;
     } 
 
+    else if (children.type === 'INSTANCE' && children.name.includes('#')) {
+        element = d.createElement('div');
+        element.className = `${children.name}`
+        RandomChunkWithRelative(children, className, pointer, css);
+    }
+
     else if (children.name.includes('btn') && children.name.includes('#')) {
         element = d.createElement('button');
         element.className = `${children.name}`
         children.name.includes('#') ? RandomChunkWithRelative(children, className, pointer, css) : RandomChunk(children, className, pointer, css);
     }
+    
 
     else if (children.name.includes('bs') || children.name.includes('input')) {
         element = d.createElement('input');
@@ -357,7 +364,7 @@ function processFrame(children, pointer, css, d) {
 
     else if(children.name.includes('navbar')) {
         element = d.createElement('nav');
-        element.className = `${children.name} navbar navbar-expand-lg navbar-light bg-light`
+        element.className = `${children.name} navbar navbar-expand-lg navbar-light bg-light `
         //process elemt class relaive css
         RandomChunkWithOutAbsolute(children, className, pointer, css)
     } 
