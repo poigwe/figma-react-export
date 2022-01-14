@@ -97,7 +97,7 @@ function parsePage(data) {
         fs.writeFileSync(`${rootFolder}/pages/${slugify(data.name)}/index.js`, reactBoilerPlate(`${slugify(data.name)}`,  extractHtml(textContent )));
 
         // Delete the html file
-        fs.unlinkSync(fileName);
+        // fs.unlinkSync(fileName);
 
         stack.getImagesLeft();
     });
@@ -411,15 +411,23 @@ function processRectangle(children, pointer, css, d) {
     let elementTag = convertTransitionToLink(children);
     
     var element = d.createElement(elementTag.tag);
-    if (elementTag.node) {
-        console.log('elementTag.node', elementTag.node);
-        element.href = elementTag.node + '.html'
-    }
-    else if(elementTag.noAbs === true) {
+
+    if (children.name.includes('#')) {
         element = d.createElement('div');
-        element.className = `${children.name}`
+        element.className = `${children.name} `
+        RandomChunkWithRelative(children, className, pointer, css)
+    } 
+    else if (elementTag.noAbs === true) {
+        element = d.createElement('div');
+        element.className = `${children.name} `
         RandomChunkWithOutAbsolute(children, className, pointer, css)
     } 
+    else if (elementTag.node) {
+            console.log('elementTag.node', elementTag.node);
+            element.href = elementTag.node + '.html'
+    }
+
+
     element.className += className;
     pointer.parent.appendChild(element);
 
@@ -654,7 +662,9 @@ function convertTransitionToLink(children) {
         tag = 'div';
         node = linkMap[children.transitionNodeID];
         noAbs = true;
-    } else {
+    } 
+    
+    else {
         tag = 'a'
         node = linkMap[children.transitionNodeID]
         noAbs = false;
