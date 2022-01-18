@@ -636,15 +636,23 @@ function processText(children, pointer, css, d) {
         //process elemt class relaive css
         element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
         cssString = '.' + className + '{  flex-flow: row; ' //flexbox used for frames
-        cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints)
+        cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom)
     } else if (children.name.includes('#')) {
         element = d.createElement('div');
         element.className = `${children.name} ` + className
         //process elemt class relaive css
         element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
         cssString = '.' + className + '{  ' //flexbox used for frames
-        cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints)
+        cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom)
     }
+    // else if (children.style?.fontPostScriptName?.includes('FontAwesome5Pro-Regular')) {
+    //     element = d.createElement('i');
+    //     element.className = `${children.style?.fontFamily} ` + className
+    //     //process elemt class relaive css
+    //     element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
+    //     cssString = '.' + className + '{  ' //flexbox used for frames
+    //     cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom)
+    // }
     else {
         element = d.createElement('div')
         element.className += className
@@ -800,7 +808,7 @@ function randomRGB(from = 0, to = 255) { // was used for testing purposes
 }
 
 
-function convertPositionBasedOnName (abb, pbb, constraints, layoutMode, itemSpacing, paddingLeft, paddingRight, paddingTop, paddingBottom, layoutAlign, layoutGrow, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
+function convertPositionBasedOnName (name, abb, pbb, constraints, layoutMode, itemSpacing, paddingLeft, paddingRight, paddingTop, paddingBottom, layoutAlign, layoutGrow, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
     //generate css position relative to parent block
     //api returning only global position
     var y = abb.y - pbb.y; //top
@@ -827,9 +835,9 @@ function convertPositionBasedOnName (abb, pbb, constraints, layoutMode, itemSpac
 
 
     let width = "";
-    if(name.includes('row') || name.includes('container') || name.includes('col')) {
+    if(name?.includes('row') || name?.includes('container') || name?.includes('col')) {
         width = ''
-    } else if (name.includes('#') && name.includes('#')) {
+    } else if (name?.includes('#') && name?.includes('#')) {
         width = 'width: ' + abb.width + unit + '; '
     } else {
         width = 'width: ' + abb.width + unit + '; '
