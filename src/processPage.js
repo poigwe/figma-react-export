@@ -130,8 +130,12 @@ function processChildren(children, pointer, css, d) {
         children.type = 'EXPORT'
         delete children.children
     }
+    if(children.visible === false) {
+        children.visible === false
+        delete children.children
+    }
 
-    if (!children.visible && !(typeof children.visible === 'undefined')) children.type = 'INVISIBLE'
+    if (children.visible === false || !(typeof children.visible === 'undefined')) children.type = 'INVISIBLE'
 
     switch (children.type) {
         case 'INVISIBLE':
@@ -166,11 +170,11 @@ function processChildren(children, pointer, css, d) {
             break
         default:
             console.log(children.type + ' is undefined type of element')
-            // console.log(children)
+            // console.log(children.type)
     }
 
     //recursive processing
-    if (children.children === undefined || children.children.length == 0) { } else {
+    if (children.children === undefined || children.children.length == 0) {} else {
         pointer.parent = pointer.current;
         pointer.parentBB = children.absoluteBoundingBox;
         children.children.forEach(
@@ -220,7 +224,9 @@ function RandomChunk(children, className, pointer, css) {
     var cssString = '.' + className + '{  position:absolute; clear: both; ';//flexbox used for frames
     cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints);
     cssString += 'background-color: ' + convertColor(children.backgroundColor) + '; '
-    if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+    // if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+    if(children.visible === false) cssString += 'display: none; '
+    if(children.isFixed === true) cssString += ' position:fixed; '
 
 
     if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
@@ -240,8 +246,9 @@ function RandomChunkWithOutAbsolute(children, className, pointer, css) {
         var cssString = '.' + className + '{ clear: both; ';//flexbox used for frames
         cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints);
         cssString += 'background-color: ' + convertColor(children.backgroundColor) + '; '
-        if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
-
+        // if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+        if(children.visible === false) cssString += 'display: none; '
+        if(children.isFixed === true) cssString += ' position:fixed; '
 
         if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
         children.effects.forEach(effect => {
@@ -261,7 +268,10 @@ function RandomChunkWithRelative (children, className, pointer, css) {
     var cssString = '.' + className + ' {  position: relative; clear: both; ';//flexbox used for frames
     cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints);
     cssString += 'background-color: ' + convertColor(children.backgroundColor) + ' !important; '
-    if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+    // if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+    if(children.visible === false) cssString += 'display: none; '
+    if(children.isFixed === true) cssString += ' position:fixed; '
+
 
     if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
     children.effects.forEach(effect => {
@@ -292,10 +302,11 @@ function processFrame(children, pointer, css, d) {
 
                 //process elemt class relaive css
                 var cssString = '.' + className + '{  position:absolute; clear: both;'; //flexbox used for frames
-                cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+                cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom);
                 cssString += 'background-color: ' + convertColor(children.backgroundColor) + ' !important; '
-                if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
-
+                // if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+                if(children.visible === false) cssString += 'display: none; '
+                if(children.isFixed === true) cssString += ' position:fixed; '
 
 
 
@@ -380,12 +391,12 @@ function processFrame(children, pointer, css, d) {
         element = d.createElement(elementTag.tag);
      
         //process elemt class relaive css
-        var cssString = '.' + className + '{display:flex; position:absolute; clear: both;';//flexbox used for frames
-        cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints);
+        var cssString = '.' + className + '{ position:absolute; clear: both;';//flexbox used for frames
+        cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom);
         cssString += 'background-color: ' + convertColor(children.backgroundColor) + ' !important; '
-        if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
-
-
+        // if (!children.visible && !(typeof children.visible === 'undefined')) cssString += 'display: none; '
+        if(children.visible === false) cssString += 'display: none; '
+        if(children.isFixed === true) cssString += ' position:fixed; '
         
         if (children.clipsContent && !(typeof children.clipsContent === 'undefined')) cssString += 'overflow: hidden; '
         children.effects.forEach(effect => {
@@ -438,8 +449,8 @@ function processRectangle(children, pointer, css, d) {
     element.className += className;
     pointer.parent.appendChild(element);
 
-    var cssString = '.' + className + '{display:flex; position:absolute; box-sizing: border-box; ' //flexbox used for frames
-    cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints)
+    var cssString = '.' + className + '{ position:absolute; box-sizing: border-box; ' //flexbox used for frames
+    cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom)
 
     let renderStroke = false // check if image first
     if (children.fills.length == 0) renderStroke = true
@@ -487,8 +498,8 @@ function processAsImage(children, pointer, css, d) {
     element.className += className;
     pointer.parent.appendChild(element);
 
-    var cssString = '.' + className + '{display:flex; position:absolute; ' //flexbox used for frames
-    cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints)
+    var cssString = '.' + className + '{ position:absolute; ' //flexbox used for frames
+    cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom)
     getImageMap(children.id, md5(children.id))
     cssString += 'background-image: url("../public/images/' + md5(children.id) + '.png"); background-repeat: no-repeat; background-size: 100%; ';
 
@@ -617,29 +628,34 @@ function processText(children, pointer, css, d) {
     let cssString = "";
     let element = "";
 
+    console.log('children style', children.style?.fontPostScriptName)
+
     if (children.name.includes('col')) {
         element = d.createElement('div');
         element.className = `${children.name} ` + className
         //process elemt class relaive css
         element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
-        cssString = '.' + className + '{ display:flex; flex-flow: row; ' //flexbox used for frames
+        cssString = '.' + className + '{  flex-flow: row; ' //flexbox used for frames
+        cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints)
     } else if (children.name.includes('#')) {
         element = d.createElement('div');
         element.className = `${children.name} ` + className
         //process elemt class relaive css
         element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);  
         cssString = '.' + className + '{  ' //flexbox used for frames
+        cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints)
     }
     else {
         element = d.createElement('div')
         element.className += className
         element.innerHTML += convertCharacters(children.characters, children.characterStyleOverrides, children.styleOverrideTable, css, className);    
-        cssString = '.' + className + '{position:absolute; display:flex; flex-flow: row; ' //flexbox used for frames
+        cssString = '.' + className + '{position:absolute;  flex-flow: row; ' //flexbox used for frames
+        cssString += convertPosition(children.absoluteBoundingBox, pointer.parentBB, children.constraints, children.layoutMode, children.itemSpacing, children.paddingLeft, children.paddingRight, children.paddingTop, children.paddingBottom)
     }
 
 
-    cssString += convertPositionBasedOnName(children.name, children.absoluteBoundingBox, pointer.parentBB, children.constraints)
 
+    
     //console.log('processing text block: '+ /*children.name +*/ ' whith id: ' + children.id)
 
     children.fills.forEach(function (fills) {
@@ -670,18 +686,18 @@ function convertTransitionToLink(children) {
         node = linkMap[children.transitionNodeID];
         noAbs = true;
     } 
-    
     else {
         tag = 'a'
         node = linkMap[children.transitionNodeID]
-        noAbs = false;
     }
     return { tag: tag, node: node, noAbs: noAbs }
 }
+
+
 function convertCharacters(string, overrideMap, overrideTable, css, baseClass = '') {
     let spanCreated = 0;
     let cssString = ''
-    let result = '<div class="width_100"><p>'
+    let result = '<p>'
     let i = 0;
 
     string.split('').forEach(char => {
@@ -711,6 +727,7 @@ function convertCharacters(string, overrideMap, overrideTable, css, baseClass = 
         }
         i++;
     })
+
     Object.entries(overrideTable).forEach(style => {
         cssString += '.' + baseClass + '-' + style[0] + ' {'
         cssString += convertStyle(style[1])
@@ -718,7 +735,7 @@ function convertCharacters(string, overrideMap, overrideTable, css, baseClass = 
     })
 
     css.innerHTML += cssString;
-    result += '</p></div>'
+    result += '</p>'
 
     return result
 }
@@ -782,11 +799,8 @@ function randomRGB(from = 0, to = 255) { // was used for testing purposes
     return 'rgba(' + Math.floor(Math.random() * to + from) + ', ' + Math.floor(Math.random() * to + from) + ', ' + Math.floor(Math.random() * to + from) + ', ' + Math.round(Math.random() * 100) / 100 + ')';
 }
 
-function checkIfRow() {
 
-}
-
-function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
+function convertPositionBasedOnName (abb, pbb, constraints, layoutMode, itemSpacing, paddingLeft, paddingRight, paddingTop, paddingBottom, layoutAlign, layoutGrow, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
     //generate css position relative to parent block
     //api returning only global position
     var y = abb.y - pbb.y; //top
@@ -828,7 +842,7 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
         height = 'min-height: ' + abb.height + unit + '; '
     }
 
-    if (Math.round(abb.width)==Math.round(pbb.width)) width = 'width: 100%;' //experimental
+    // if (Math.round(abb.width)==Math.round(pbb.width)) width = 'width: 100%;' //experimental
     // if (abb.width < 1000) width = 'width: 100%; max-width: 100%;' 
 
     if (!exc) cssString += width + height
@@ -838,6 +852,15 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
     } else {
         if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y / 16 + 'rem;'
     }
+
+
+    layoutMode === undefined ? null : cssString += 'display: flex;'
+    layoutMode === undefined ? null : layoutMode === 'VERTICAL' ? cssString += `flex-direction: column;` : layoutMode === 'HORIZONTAL' ? cssString += `flex-direction: row;` : cssString += `flex-direction: none;`
+    paddingLeft === undefined ? null : cssString += 'padding-left: ' + paddingLeft / 16 + 'rem;'
+    paddingRight === undefined ? null : cssString += 'padding-right: ' + paddingRight / 16 + 'rem;'
+    paddingTop === undefined ? null : cssString += 'padding-top: ' + paddingTop / 16 + 'rem;'
+    paddingBottom === undefined ? null : cssString += 'padding-bottom: ' + paddingBottom / 16 + 'rem;'
+    layoutAlign === undefined ? null : cssString += `align-self: ${layoutAlign};`
 
 
     if (v === 'TOP' || v === 'SCALE') cssString += 'top: ' + y / 16 + 'rem;'
@@ -855,7 +878,7 @@ function convertPositionBasedOnName (name, abb, pbb, constraints, sw = false, ex
     return cssString;
 }
 
-function convertPosition(abb, pbb, constraints, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
+function convertPosition(abb, pbb, constraints, layoutMode, itemSpacing, paddingLeft, paddingRight, paddingTop, paddingBottom, layoutAlign, layoutGrow, sw = false, exc = false) { //sw -stroke weight correction // exc-export correction will set width and height as 100%
     //generate css position relative to parent block
     //api returning only global position
     var y = abb.y - pbb.y; //top
@@ -881,6 +904,18 @@ function convertPosition(abb, pbb, constraints, sw = false, exc = false) { //sw 
     }
     let width = 'width: ' + abb.width + unit + '; '
     let height = 'height: ' + abb.height + unit + '; '
+
+
+    layoutMode === undefined ? null : cssString += 'display: flex;'
+    layoutMode === undefined ? null : layoutMode === 'VERTICAL' ? cssString += `flex-direction: column;` : layoutMode === 'HORIZONTAL' ? cssString += `flex-direction: row;` : cssString += `flex-direction: none;`
+    paddingLeft === undefined ? null : cssString += 'padding-left: ' + paddingLeft / 16 + 'rem;'
+    paddingRight === undefined ? null : cssString += 'padding-right: ' + paddingRight / 16 + 'rem;'
+    paddingTop === undefined ? null : cssString += 'padding-top: ' + paddingTop / 16 + 'rem;'
+    paddingBottom === undefined ? null : cssString += 'padding-bottom: ' + paddingBottom / 16 + 'rem;'
+    layoutAlign === undefined ? null : cssString += `align-self: ${layoutAlign} ;`
+    layoutGrow === undefined ? null : cssString += `flex-grow: ${layoutGrow} ;`
+    // itemSpacing === undefined ? null : cssString += 'letter-spacing: ' + itemSpacing / 16 + 'rem;'
+    
 
     if (Math.round(abb.width)==Math.round(pbb.width)) width = 'width: 100%;' //experimental
     // if (abb.width < 1000) width = 'width: 100%; max-width: 100%;' 
